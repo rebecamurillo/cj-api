@@ -1,3 +1,3 @@
 export * from './ping.controller';
-export * from './user-controller.controller';
-export * from './authorisation.controller';
+export * from './user.controller';
+export * from './authentication/authentication.controller';

@@ -1,7 +1,7 @@
 import {Entity, model, property} from '@loopback/repository';
 
 @model({settings: {strict: false}})
-export class User extends Entity {
+export class Users extends Entity {
   @property({
     type: 'string',
     id: true,
@@ -43,13 +43,13 @@ export class User extends Entity {
     type: 'date',
     default: "$now",
   })
-  createdAt?: string;
+  createdAt?: Date;
 
   @property({
     type: 'date',
     default: "$now",
   })
-  updatedAt?: string;
+  updatedAt?: Date;
 
   // Define well-known properties here
 
@@ -57,7 +57,7 @@ export class User extends Entity {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [prop: string]: any;
 
-  constructor(data?: Partial<User>) {
+  constructor(data?: Partial<Users>) {
     super(data);
   }
 }
@@ -66,4 +66,4 @@ export interface UserRelations {
   // describe navigational properties here
 }
 
-export type UserWithRelations = User & UserRelations;
+export type UserWithRelations = Users & UserRelations;
