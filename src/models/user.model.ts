@@ -1,14 +1,14 @@
-import {Entity, model, property} from '@loopback/repository';
+import {model, property, Entity} from '@loopback/repository';
 
 @model({settings: {strict: false}})
-export class Users extends Entity {
+export class User extends Entity {
   @property({
-    type: 'string',
     id: true,
     generated: true,
+    type: 'number',
   })
-  id?: string;
-  
+  id: number;
+
   @property({
     type: 'string',
     required: true,
@@ -23,7 +23,10 @@ export class Users extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: true, 
+    index: {
+      unique: true
+  }
   })
   email: string;
 
@@ -41,23 +44,18 @@ export class Users extends Entity {
 
   @property({
     type: 'date',
-    default: "$now",
+    default: new Date(),
   })
   createdAt?: Date;
 
   @property({
     type: 'date',
-    default: "$now",
+    default: new Date(),
   })
   updatedAt?: Date;
 
-  // Define well-known properties here
 
-  // Indexer property to allow additional data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [prop: string]: any;
-
-  constructor(data?: Partial<Users>) {
+  constructor(data?: Partial<User>) {
     super(data);
   }
 }
@@ -66,4 +64,4 @@ export interface UserRelations {
   // describe navigational properties here
 }
 
-export type UserWithRelations = Users & UserRelations;
+export type UserWithRelations = User & UserRelations;

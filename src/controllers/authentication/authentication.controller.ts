@@ -1,7 +1,7 @@
 // Uncomment these imports to begin using these cool features!
 
-import { UsersRepository } from '../../repositories';
-import { Users } from '../../models';
+import { UserRepository } from '../../repositories';
+import { User } from '../../models';
 import * as bcrypt from 'bcryptjs';
 import { LoginInput, SignUpInput } from './auth.input.model';
 import { isNullOrUndefined } from 'util';
@@ -10,8 +10,6 @@ import {
   Credentials,
   MyUserService,
   TokenServiceBindings,
-  User,
-  UserRepository,
   UserServiceBindings,
 } from '@loopback/authentication-jwt';
 import {inject} from '@loopback/core';
@@ -61,12 +59,11 @@ export class AuthenticationController {
     public userService: MyUserService,
     @inject(SecurityBindings.USER, {optional: true})
     public user: UserProfile,
-    @repository(UserRepository) protected userRepository: UserRepository,
-    @repository(UsersRepository)
-    public usersRepository : UsersRepository
+    @repository(UserRepository)
+    public userRepository : UserRepository
   ) {}
 
-  @post('/auth/admin/signup', {
+  @post('/auth/signup', {
     responses: {
       '200': {
         description: 'User model instance',
@@ -84,34 +81,34 @@ export class AuthenticationController {
         },
       },
     })
-    userInput: Omit<SignUpInput, 'id'>,
-    //@requestBody(CredentialsRequestBody) credentials: Credentials,
-
+    userInput: SignUpInput,
   ): Promise<User> {
+    //check if email already exists
+    const emailFound = await this.userRepository.find({ 
+      where: { email : userInput.email },
+      fields: {id:true}
+    });
+    if (!isNullOrUndefined(emailFound) && emailFound.length > 0){
+      throw new Error('The email already exists');
+    }
+
     var user = {
       email : userInput.email,
       password: userInput.password?userInput.password:Math.random().toString(36).slice(-10),
       firstname : userInput.firstname,
       lastname : userInput.lastname,
-      role : 'ADMIN',
-      createdAt : new Date(),
-      updatedAt : new Date()
+      role : 'ADMIN'
     };
-    // };
-    // user.email = userInput.email;
-    // user.firstname = userInput.firstname;
-    // user.lastname = userInput.lastname;
-    // user.role = 'ADMIN';
-    // user.createdAt = new Date();
-    // user.updatedAt = new Date();
 
     // var pw = user.password?user.password:Math.random().toString(36).slice(-10);
-    user.password = await bcrypt.hash(user.password, 5);
+    user.password = await hash(user.password, await genSalt());//await bcrypt.hash(user.password, 5);
 
-    return this.userRepository.create(user);
+    const userCreated: User = await this.userRepository.create(user);
+    delete userCreated.password;
+    return userCreated;
   }
 
-  @post('/auth/admin/login', {
+  @post('/auth/login', {
     responses: {
       '200': {
         description: 'User model instance',
@@ -124,83 +121,39 @@ export class AuthenticationController {
       content: {
         'application/json': {
           schema: getModelSchemaRef(LoginInput, {
-            title: 'Login'
+            title: 'LoginInput'
           }),
         },
       },
     })
-    login: Omit<LoginInput,'id'>,
+    login: LoginInput
   ): Promise<any> {
     const userFound = await this.userRepository.find({ 
       where: { email : login.email },
       fields: {id:true,email:true,password:true}
     });
-
-    console.log('LOGIN user found');
-    console.log(userFound);
     
     if (isNullOrUndefined(userFound) || userFound.length == 0){
-      throw new Error('The email is not found');
+      throw new Error('No account found for the email');
     }
 
     //check if password is valid
     var pwValid = false;
-    try {
-      pwValid = await bcrypt.compare(login.password, userFound[0].password);
-    } catch (e) {
-      console.error(e);
+    pwValid = await bcrypt.compare(login.password, userFound[0].password);
+
+    if (!pwValid){
+      throw new Error('The password is not valid!');
     }
 
     const userProfile : UserProfile = {
+      [securityId]: userFound[0].id.toString(),
       email: userFound[0].email,
       name: userFound[0].role, 
-      [securityId]: userFound[0].id
     };
 
     const token = await this.jwtService.generateToken(userProfile);
 
-    return token;
-  }
-
-  
-  /*********************
-   * 
-   * 
-   * 
-   * 
-   * 
-   */
-
-  @post('/users/login', {
-    responses: {
-      '200': {
-        description: 'Token',
-        content: {
-          'application/json': {
-            schema: {
-              type: 'object',
-              properties: {
-                token: {
-                  type: 'string',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  async login(
-    @requestBody(CredentialsRequestBody) credentials: Credentials,
-  ): Promise<{token: string}> {
-    // ensure the user exists, and the password is correct
-    const user = await this.userService.verifyCredentials(credentials);
-    // convert a User object into a UserProfile object (reduced set of properties)
-    const userProfile = this.userService.convertToUserProfile(user);
-
-    // create a JSON Web Token based on the user profile
-    const token = await this.jwtService.generateToken(userProfile);
-    return {token};
+    return {token : token};
   }
 
   @authenticate('jwt')
@@ -218,42 +171,17 @@ export class AuthenticationController {
     @inject(SecurityBindings.USER)
     currentUserProfile: UserProfile,
   ): Promise<string> {
+    console.log('currentUserProfile');
+    console.log(currentUserProfile);
     return currentUserProfile[securityId];
   }
+  
+  /*********************
+   * 
+   * 
+   * 
+   * 
+   * 
+   */
 
-  @post('/signup', {
-    responses: {
-      '200': {
-        description: 'User',
-        content: {
-          'application/json': {
-            schema: {
-              'x-ts-type': User,
-            },
-          },
-        },
-      },
-    },
-  })
-  async signUp(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(NewUserRequest, {
-            title: 'NewUser',
-          }),
-        },
-      },
-    })
-    newUserRequest: NewUserRequest,
-  ): Promise<User> {
-    const password = await hash(newUserRequest.password, await genSalt());
-    const savedUser = await this.userRepository.create(
-      _.omit(newUserRequest, 'password'),
-    );
-
-    await this.userRepository.userCredentials(savedUser.id).create({password});
-
-    return savedUser;
-  }
 }
