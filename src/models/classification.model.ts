@@ -24,7 +24,17 @@ export class Classification extends Entity {
     type: 'number',
     default: 0,
   })
-  parentId?: number;
+  parentId: number;
+
+  @property({
+    type: 'string'
+  })
+  level?: string;
+
+  @property({
+    type: 'string'
+  })
+  levelSorted?: string;
 
   @property({
     type: 'date',

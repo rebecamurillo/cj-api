@@ -14,8 +14,8 @@ npm start
 ### 2. Database 
 Run the following commands to install DB schema (https://loopback.io/doc/en/lb4/todo-list-tutorial-sqldb.html)
 ```bash
-$ npm run build
-$ npm run migrate
+npm run build
+npm run migrate
 ```
 
 ## Create routes and models
