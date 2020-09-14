@@ -16,7 +16,7 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import {Classification} from '../../models';
+import {Classification, ClassificationRelations} from '../../models';
 import {ClassificationRepository} from '../../repositories';
 import { isNullOrUndefined } from 'util';
 
@@ -51,7 +51,7 @@ export class ClassificationController {
     const classificationCreated = await this.classificationRepository.create(classification);
 
     if (classification.parentId == 0 || isNullOrUndefined(classification.parentId)){
-      classificationCreated.level = 0+'-'+classificationCreated.id;
+      classificationCreated.level = ''+classificationCreated.id;
       classificationCreated.levelSorted = classificationCreated.name+'_'+classificationCreated.id;
    }else {
       const parent = await this.classificationRepository.findById(classification.parentId);
@@ -114,7 +114,7 @@ export class ClassificationController {
     },
   })
   async findWithOrder(): Promise<Classification[]> {
-    const query = 'select c2.*, concat(repeat(\'> \', (char_length(level)-char_length(replace(level,\'-\',\'\')))-1 ),c2.name)  as namewithspaces from classification c2 order by levelsorted asc ';
+    const query = 'select c2.*, concat(repeat(\'> \', (char_length(level)-char_length(replace(level,\'-\',\'\'))) ),c2.name)  as namewithspaces from classification c2 order by levelsorted asc ';
     return await this.classificationRepository.dataSource.execute(query);
   }
 
@@ -177,21 +177,31 @@ export class ClassificationController {
     })
     classification: Classification,
   ): Promise<void> {
-    await this.classificationRepository.updateById(id, classification);
-  }
+    const toUpdate = await this.classificationRepository.findById(id);
 
-  @put('/classifications/{id}', {
-    responses: {
-      '204': {
-        description: 'Classification PUT success',
-      },
-    },
-  })
-  async replaceById(
-    @param.path.number('id') id: number,
-    @requestBody() classification: Classification,
-  ): Promise<void> {
-    await this.classificationRepository.replaceById(id, classification);
+    if (toUpdate.name != classification.name){
+      let children: Classification[] = []
+
+      if (toUpdate.parentId == 0){
+        children = await this.classificationRepository.find({where: {level:{like:'%'+id+'-%'}}})
+      }else {
+        children = await this.classificationRepository.find({where: {level:{like:'%-'+id+'-%'}}})
+      }
+
+      children.forEach(function(child,index) {
+        if (toUpdate.parentId == 0){
+          children[index].levelSorted = child.levelSorted?child.levelSorted.replace(toUpdate.name+'_'+id+'-',classification.name+'_'+id+'-'):child.levelSorted;
+        }else  {
+          children[index].levelSorted = child.levelSorted?child.levelSorted.replace('-'+toUpdate.name+'_'+id+'-','-'+classification.name+'_'+id+'-'):child.levelSorted;
+        }
+      });
+
+      for (let i = 0; i < children.length; i++) {
+        await this.classificationRepository.update(children[i]);
+      }
+    }
+
+    await this.classificationRepository.updateById(id, classification);
   }
 
   @del('/classifications/{id}', {
@@ -202,6 +212,30 @@ export class ClassificationController {
     },
   })
   async deleteById(@param.path.number('id') id: number): Promise<void> {
+    const toDelete = await this.classificationRepository.findById(id);
+    let children: Classification[] = []
+
+    if (toDelete.parentId == 0){
+      children = await this.classificationRepository.find({where: {level:{like:'%'+id+'-%'}}})
+    }else {
+      children = await this.classificationRepository.find({where: {level:{like:'%-'+id+'-%'}}})
+    }
+
+    children.forEach(function(child,index) {
+      if (toDelete.parentId == 0){
+        children[index].level = child.level?child.level.replace(id+'-',''):child.level;
+        children[index].levelSorted = child.levelSorted?child.levelSorted.replace(toDelete.name+'_'+id+'-',''):child.levelSorted;
+        children[index].parentId = child.parentId&&child.parentId==toDelete.id?0:child.parentId;
+      }else  {
+        children[index].level = child.level?child.level.replace('-'+id+'-','-'):child.level;
+        children[index].levelSorted = child.levelSorted?child.levelSorted.replace('-'+toDelete.name+'_'+id+'-','-'):child.levelSorted;
+        children[index].parentId = child.parentId&&child.parentId==toDelete.id?toDelete.parentId:child.parentId;
+      }
+    });
+
+    for (let i = 0; i < children.length; i++) {
+      await this.classificationRepository.update(children[i]);
+    }
     await this.classificationRepository.deleteById(id);
   }
 }
