@@ -22,9 +22,8 @@ npm run migrate
 
 ### Create datasource
 ```bash
-lb4 controller
+lb4 datasource
 ```
-
 ### Create model
 ```bash
 lb4 model
@@ -33,7 +32,6 @@ lb4 model
 ```bash
 lb4 repository
 ```
-
 ### Create controller
 ```bash
 lb4 controller

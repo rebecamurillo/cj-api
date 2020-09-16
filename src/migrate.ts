@@ -14,7 +14,8 @@ export async function migrate(args: string[]) {
     // foreign key constraint.
     // For PostgreSQL connector, it does not create tables in the
     // right order.  Therefore, this change is needed.
-    models: ['User','Classification'],
+    models: ['User','Category',
+  'Brand','Supplier','Attribute','AttributeValue','Product'],
   });
   // Connectors usually keep a pool of opened connections,
   // this keeps the process running even after all work is done.

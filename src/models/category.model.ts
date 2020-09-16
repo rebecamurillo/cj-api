@@ -1,7 +1,7 @@
 import {Entity, model, property, hasMany} from '@loopback/repository';
 
 @model()
-export class Classification extends Entity {
+export class Category extends Entity {
   @property({
     type: 'number',
     id: true,
@@ -48,16 +48,16 @@ export class Classification extends Entity {
   })
   updatedAt?: Date;
 
-  @hasMany(() => Classification, {keyTo: 'parentId'})
-  children?: Classification[];
+  @hasMany(() => Category, {keyTo: 'parentId'})
+  children?: Category[];
 
-  constructor(data?: Partial<Classification>) {
+  constructor(data?: Partial<Category>) {
     super(data);
   }
 }
 
-export interface ClassificationRelations {
+export interface CategoryRelations {
   // describe navigational properties here
 }
 
-export type ClassificationWithRelations = Classification & ClassificationRelations;
+export type CategoryWithRelations = Category & CategoryRelations;
