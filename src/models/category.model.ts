@@ -22,9 +22,11 @@ export class Category extends Entity {
 
   @property({
     type: 'number',
-    default: 0,
   })
-  parentId: number;
+  parentId?: number;  
+  
+  @hasMany(() => Category, {keyTo: 'parentId'})
+  children: Category[];
 
   @property({
     type: 'string'
@@ -47,9 +49,6 @@ export class Category extends Entity {
     default: new Date,
   })
   updatedAt?: Date;
-
-  @hasMany(() => Category, {keyTo: 'parentId'})
-  children?: Category[];
 
   constructor(data?: Partial<Category>) {
     super(data);

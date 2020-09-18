@@ -16,8 +16,8 @@ import {
   del,
   requestBody,
 } from '@loopback/rest';
-import {AttributeValue} from '../models';
-import {AttributeValueRepository} from '../repositories';
+import {AttributeValue} from '../../models';
+import {AttributeValueRepository} from '../../repositories';
 
 export class AttributeValueController {
   constructor(

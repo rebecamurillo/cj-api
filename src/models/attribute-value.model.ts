@@ -2,7 +2,24 @@ import {Entity, model, property, belongsTo} from '@loopback/repository';
 import { Product } from './product.model';
 import { Attribute } from './attribute.model';
 
-@model()
+@model({
+  settings: {
+    foreignKeys: {
+      fk_attribute_attribute_value: {
+        name: 'fk_attributevalue_attributeId',
+        entity: 'Attribute',
+        entityKey: 'id',
+        foreignKey: 'attributeid'
+      },
+      fk_product_attribute_value: {
+        name: 'fk_attributevalue_productId',
+        entity: 'Product',
+        entityKey: 'id',
+        foreignKey: 'productid'
+      },
+    },
+  },
+})
 export class AttributeValue extends Entity {
   @property({
     type: 'number',
@@ -10,12 +27,6 @@ export class AttributeValue extends Entity {
     generated: true,
   })
   id?: number;
-
-  @belongsTo(() => Attribute)
-  attributeId: number;
-
-  @belongsTo(() => Product)
-  productId: number;
 
   @property({
     type: 'string',
@@ -27,6 +38,12 @@ export class AttributeValue extends Entity {
     type: 'string',
   })
   description?: string;
+
+  @belongsTo(() => Attribute)
+  attributeId: number;
+
+  @belongsTo(() => Product)
+  productId: number;
 
   constructor(data?: Partial<AttributeValue>) {
     super(data);

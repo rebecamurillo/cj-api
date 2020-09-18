@@ -1,5 +1,4 @@
-import {Entity, model, property, hasMany} from '@loopback/repository';
-import { AttributeValue } from './attribute-value.model';
+import {Entity, model, property} from '@loopback/repository';
 
 @model()
 export class Attribute extends Entity {
@@ -20,9 +19,6 @@ export class Attribute extends Entity {
     type: 'string',
   })
   description?: string;
-
-  @hasMany(() => AttributeValue)
-  orders?: AttributeValue[];
 
   constructor(data?: Partial<Attribute>) {
     super(data);
